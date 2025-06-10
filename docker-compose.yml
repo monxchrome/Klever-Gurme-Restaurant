@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  restaurant:
+    build:
+      context: ./restaurant
+    container_name: restaurant
+    environment:
+      - NODE_ENV=production
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-postgres}
+      - DATABASE_NAME=restaurant_prod
+    depends_on:
+      - postgres
+    expose:
+      - "3001"
+
+  restaurant-frontend:
+    build:
+      context: ./restaurant-frontend
+    container_name: restaurant-frontend
+    environment:
+      - NODE_ENV=production
+    expose:
+      - "3000"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+      POSTGRES_DB: restaurant_prod
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - restaurant-frontend
+      - restaurant
+
+volumes:
+  pgdata:
